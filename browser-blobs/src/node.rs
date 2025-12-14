@@ -1,9 +1,11 @@
+use std::path::Path;
+
 use anyhow::{anyhow, Result};
 use bao_tree::{Blake3Hasher, Hasher};
 use bytes::Bytes;
 use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint, EndpointId};
 use iroh_blobs::{
-    api::{blobs::BlobStatus, downloader::Downloader, Store},
+    api::{blobs::{BlobStatus, ImportMode, AddPathOptions}, downloader::Downloader, Store},
     ticket::BlobTicket,
     BlobFormat, BlobsProtocol, Hash,
 };
@@ -46,7 +48,7 @@ pub struct CommpHasher;
 
 impl Hasher for CommpHasher {
     fn hash_chunk(_start_chunk: u64, data: &[u8], _is_root: bool) -> bao_tree::Hash {
-        println!("vmx: hash_chunk: data len: {}", data.len());
+        //println!("vmx: hash_chunk: data len: {}", data.len());
         // TODO vmx 2025-09-21: no clue when 20 and 64 bytes are hashed, so this is a hack for now
         // to at least keep things running.
         if data.len() < 64 {
@@ -82,7 +84,11 @@ impl BlobsNode {
         let discovery = StaticProvider::default();
         let endpoint = iroh::Endpoint::bind().await?;
         endpoint.discovery().add(discovery.clone());
+
+        #[cfg(not(feature = "cli"))]
         let store = iroh_blobs::store::mem::MemStore::<HasherToUse>::default();
+        #[cfg(feature = "cli")]
+        let store = iroh_blobs::store::fs::FsStore::load::<HasherToUse>("datastore").await?;
         let downloader = Downloader::new::<HasherToUse>(&store, &endpoint);
         let router = Router::builder(endpoint)
             .accept(iroh_blobs::ALPN, BlobsProtocol::<HasherToUse>::new(&store, None))
@@ -103,31 +109,27 @@ impl BlobsNode {
         self.router.endpoint()
     }
 
-    pub async fn download(&self, ticket: BlobTicket) -> anyhow::Result<Hash> {
-        self.discovery.add_endpoint_info(ticket.addr().clone());
-        self.downloader
-            .download(ticket.hash_and_format(), [ticket.addr().id])
-            .await?;
-        Ok(ticket.hash())
-    }
+    //pub async fn download(&self, ticket: BlobTicket) -> anyhow::Result<Hash> {
+    //    self.discovery.add_endpoint_info(ticket.addr().clone());
+    //    self.downloader
+    //        .download(ticket.hash_and_format(), [ticket.addr().id])
+    //        .await?;
+    //    Ok(ticket.hash())
+    //}
 
-    pub async fn import(&self, data: Bytes) -> Result<BlobTicket> {
+    pub async fn import(&self, path: &Path) -> Result<BlobTicket> {
         let tag = self
             .blobs
-            .add_bytes(data)
+            .add_path_with_opts(AddPathOptions {
+                path: path.to_path_buf(),
+                format: BlobFormat::Raw,
+                mode: ImportMode::TryReference
+            })
             .await
             .inspect_err(|err| tracing::warn!(?err, "import failed"))?;
         tracing::info!(?tag, "imported!");
         let ticket = self.ticket(tag.hash, tag.format).await?;
         Ok(ticket)
-    }
-
-    pub async fn complete_size(&self, hash: Hash) -> Result<u64> {
-        match self.blobs.status(hash).await? {
-            BlobStatus::NotFound => Err(anyhow!("not found")),
-            BlobStatus::Partial { size: _ } => Err(anyhow!("blob is incomplete")),
-            BlobStatus::Complete { size } => Ok(size),
-        }
     }
 
     pub async fn ticket(&self, hash: Hash, format: BlobFormat) -> Result<BlobTicket> {

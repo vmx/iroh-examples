@@ -29,7 +29,7 @@ wasm-bindgen = "=0.2.105"
 wasm-bindgen-futures = "0.4"
 
 [features]
-cli = ["tokio/full", "dep:clap"]
+cli = ["tokio/full", "dep:clap", "iroh-blobs/fs-store"]
 
 [patch.crates-io]
 bao-tree = { path = "/home/vmx/src/rust/iroh/bao-tree" }

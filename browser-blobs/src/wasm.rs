@@ -38,23 +38,25 @@ impl BlobsNode {
     }
 
     pub async fn import(&self, data: Uint8Array) -> Result<String, JsError> {
-        let data = uint8array_to_bytes(&data);
-        tracing::info!("importing data of len {}", data.len());
-        let ticket = self.0.import(data).await.map_err(to_js_err)?;
-        Ok(ticket.to_string())
+        unimplemented!();
+        //let data = uint8array_to_bytes(&data);
+        //tracing::info!("importing data of len {}", data.len());
+        //let ticket = self.0.import(data).await.map_err(to_js_err)?;
+        //Ok(ticket.to_string())
     }
 
     pub async fn download(&self, ticket: String) -> Result<String, JsError> {
-        let ticket: BlobTicket = ticket.parse().map_err(to_js_err)?;
-        let hash = self.0.download(ticket).await.map_err(to_js_err)?;
-        Ok(hash.to_string())
+        unimplemented!();
+        //let ticket: BlobTicket = ticket.parse().map_err(to_js_err)?;
+        //let hash = self.0.download(ticket).await.map_err(to_js_err)?;
+        //Ok(hash.to_string())
     }
 
-    pub async fn complete_size(&self, hash: String) -> Result<u64, JsError> {
-        let hash: Hash = hash.parse().map_err(to_js_err)?;
-        let size = self.0.complete_size(hash).await.map_err(to_js_err)?;
-        Ok(size)
-    }
+    //pub async fn complete_size(&self, hash: String) -> Result<u64, JsError> {
+    //    let hash: Hash = hash.parse().map_err(to_js_err)?;
+    //    let size = self.0.complete_size(hash).await.map_err(to_js_err)?;
+    //    Ok(size)
+    //}
 
     pub async fn get(&self, hash: String) -> Result<Uint8Array, JsError> {
         let hash: Hash = hash.parse().map_err(to_js_err)?;
