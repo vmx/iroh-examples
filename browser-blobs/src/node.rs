@@ -12,7 +12,7 @@ use iroh_blobs::{
 use sha2::{Digest, Sha256};
 
 //type HasherToUse = Blake3Hasher;
-type HasherToUse = CommpHasher;
+pub type HasherToUse = CommpHasher;
 
 
 // Based on Mistral:
@@ -42,7 +42,6 @@ fn calculate_merkle_root(data: &[u8]) -> Vec<u8> {
 }
 
 
-/// TODO vmx 2025-09-21
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct CommpHasher;
 
@@ -109,27 +108,36 @@ impl BlobsNode {
         self.router.endpoint()
     }
 
-    //pub async fn download(&self, ticket: BlobTicket) -> anyhow::Result<Hash> {
-    //    self.discovery.add_endpoint_info(ticket.addr().clone());
-    //    self.downloader
-    //        .download(ticket.hash_and_format(), [ticket.addr().id])
-    //        .await?;
-    //    Ok(ticket.hash())
-    //}
+    pub async fn download(&self, ticket: BlobTicket) -> anyhow::Result<Hash> {
+        self.discovery.add_endpoint_info(ticket.addr().clone());
+        self.downloader
+            .download(ticket.hash_and_format(), [ticket.addr().id])
+            .await?;
+        Ok(ticket.hash())
+    }
 
     pub async fn import(&self, path: &Path) -> Result<BlobTicket> {
         let tag = self
             .blobs
-            .add_path_with_opts(AddPathOptions {
-                path: path.to_path_buf(),
-                format: BlobFormat::Raw,
-                mode: ImportMode::TryReference
-            })
+            .add_path(&path)
+            //.add_path_with_opts(AddPathOptions {
+            //    path: path.to_path_buf(),
+            //    format: BlobFormat::Raw,
+            //    mode: ImportMode::TryReference
+            //})
             .await
             .inspect_err(|err| tracing::warn!(?err, "import failed"))?;
         tracing::info!(?tag, "imported!");
         let ticket = self.ticket(tag.hash, tag.format).await?;
         Ok(ticket)
+    }
+
+    pub async fn complete_size(&self, hash: Hash) -> Result<u64> {
+        match self.blobs.status(hash).await? {
+            BlobStatus::NotFound => Err(anyhow!("not found")),
+            BlobStatus::Partial { size: _ } => Err(anyhow!("blob is incomplete")),
+            BlobStatus::Complete { size } => Ok(size),
+        }
     }
 
     pub async fn ticket(&self, hash: Hash, format: BlobFormat) -> Result<BlobTicket> {

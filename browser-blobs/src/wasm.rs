@@ -1,10 +1,17 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use bao_tree::io::BaoContentItem;
 use bytes::Bytes;
-use iroh_blobs::{ticket::BlobTicket, Hash};
+use iroh_blobs::{ticket::BlobTicket, Hash,
+    get::request::GetBlobItem,
+};
+use futures::channel::mpsc;
 use js_sys::Uint8Array;
+use n0_future::StreamExt;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber_wasm::MakeConsoleWriter;
-use wasm_bindgen::{prelude::wasm_bindgen, JsError};
+use wasm_bindgen::{prelude::wasm_bindgen, JsError, JsValue};
+use wasm_streams::{readable::sys::ReadableStream as JsReadableStream, ReadableStream};
+
 
 #[wasm_bindgen(start)]
 fn start() {
@@ -34,29 +41,57 @@ impl BlobsNode {
     }
 
     pub fn endpoint_id(&self) -> String {
-        self.0.endpoint_id().to_string()
+        self.0.endpoint().id().to_string()
     }
 
-    pub async fn import(&self, data: Uint8Array) -> Result<String, JsError> {
-        unimplemented!();
-        //let data = uint8array_to_bytes(&data);
-        //tracing::info!("importing data of len {}", data.len());
-        //let ticket = self.0.import(data).await.map_err(to_js_err)?;
-        //Ok(ticket.to_string())
-    }
-
-    pub async fn download(&self, ticket: String) -> Result<String, JsError> {
-        unimplemented!();
-        //let ticket: BlobTicket = ticket.parse().map_err(to_js_err)?;
+    //pub async fn download(&self, ticket: String) -> Result<String, JsError> {
+    pub async fn download(&self, ticket: String) -> Result<JsReadableStream, JsError> {
+        let ticket: BlobTicket = ticket.parse().map_err(to_js_err)?;
         //let hash = self.0.download(ticket).await.map_err(to_js_err)?;
         //Ok(hash.to_string())
+        let connection = self.0.endpoint().connect(ticket.addr().id, iroh_blobs::ALPN).await?;
+        let mut progress = iroh_blobs::get::request::get_blob::<crate::HasherToUse>(connection, ticket.hash());
+
+        let (mut tx, rx) = mpsc::channel::<Result<JsValue, JsValue>>(1);
+
+        loop {
+            match progress.next().await {
+                Some(GetBlobItem::Item(item)) => match item {
+                    BaoContentItem::Leaf(leaf) => {
+                        println!("vmx: data received: {:?}", &leaf.data);
+                        tracing::info!("vmx: data received: {:?}", &leaf.data);
+                        let js_value = Uint8Array::from(&leaf.data[..]).into();
+                        tx.try_send(Ok(js_value)).unwrap();
+
+                        //tokio::io::stdout().write_all(&leaf.data).await?;
+                    }
+                    BaoContentItem::Parent(parent) => {
+                        tracing::info!("Parent: {parent:?}");
+                    }
+                },
+                Some(GetBlobItem::Done(stats)) => {
+                    //break stats;
+                    println!("vmx: stats: {:?}", stats);
+                    break
+                }
+                Some(GetBlobItem::Error(err)) => {
+                    return Err(anyhow!("Error while streaming blob: {err}")).map_err(to_js_err);
+                }
+                None => {
+                    return Err(anyhow!("Stream ended unexpectedly.")).map_err(to_js_err);
+                }
+            }
+        }
+
+        let output_stream = ReadableStream::from_stream(rx).into_raw();
+        Ok(output_stream)
     }
 
-    //pub async fn complete_size(&self, hash: String) -> Result<u64, JsError> {
-    //    let hash: Hash = hash.parse().map_err(to_js_err)?;
-    //    let size = self.0.complete_size(hash).await.map_err(to_js_err)?;
-    //    Ok(size)
-    //}
+    pub async fn complete_size(&self, hash: String) -> Result<u64, JsError> {
+        let hash: Hash = hash.parse().map_err(to_js_err)?;
+        let size = self.0.complete_size(hash).await.map_err(to_js_err)?;
+        Ok(size)
+    }
 
     pub async fn get(&self, hash: String) -> Result<Uint8Array, JsError> {
         let hash: Hash = hash.parse().map_err(to_js_err)?;

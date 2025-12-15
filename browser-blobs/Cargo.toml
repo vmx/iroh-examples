@@ -17,16 +17,19 @@ bao-tree = { version = "0.16.0", default-features = false }
 bytes = "1.10.1"
 clap = { version = "4.5.30", features = ["derive"], optional = true }
 console_error_panic_hook = "0.1.7"
+futures = "0.3.31"
 iroh = { version = "0.95", default-features = false }
 iroh-blobs = { version = "0.97", default-features = false }
 js-sys = "0.3.77"
+n0-future = "0.3.1"
 sha2 = "0.10.9"
 tokio = { version = "1.44.0", default-features = false, features = ["sync"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing-subscriber-wasm = "0.1.0"
-wasm-bindgen = "=0.2.105"
+wasm-bindgen = "=0.2.106"
 wasm-bindgen-futures = "0.4"
+wasm-streams = "0.4.2"
 
 [features]
 cli = ["tokio/full", "dep:clap", "iroh-blobs/fs-store"]
