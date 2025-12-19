@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use bao_tree::io::BaoContentItem;
-use bytes::Bytes;
 use futures::channel::mpsc;
-use iroh_blobs::{get::request::GetBlobItem, ticket::BlobTicket, Hash};
+use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint, EndpointId};
+use iroh_blobs::{get::request::GetBlobItem, ticket::BlobTicket, BlobsProtocol, Hash};
 use js_sys::Uint8Array;
 use n0_future::{SinkExt, StreamExt};
 use tracing::level_filters::LevelFilter;
@@ -29,25 +29,35 @@ fn start() {
 }
 
 #[wasm_bindgen]
-pub struct BlobsNode(crate::BlobsNode);
+pub struct BlobsNode {
+    router: Router,
+}
 
 #[wasm_bindgen]
 impl BlobsNode {
     pub async fn spawn() -> Result<Self, JsError> {
-        Ok(Self(crate::BlobsNode::spawn().await.map_err(to_js_err)?))
+        let discovery = StaticProvider::default();
+        let endpoint = iroh::Endpoint::bind().await?;
+        endpoint.discovery().add(discovery.clone());
+
+        let store = iroh_blobs::store::mem::MemStore::<crate::HasherToUse>::default();
+        let router = Router::builder(endpoint)
+            .accept(
+                iroh_blobs::ALPN,
+                BlobsProtocol::<crate::HasherToUse>::new(&store, None),
+            )
+            .spawn();
+        Ok(Self { router })
     }
 
     pub fn endpoint_id(&self) -> String {
-        self.0.endpoint().id().to_string()
+        self.router.endpoint().id().to_string()
     }
 
-    //pub async fn download(&self, ticket: String) -> Result<String, JsError> {
     pub async fn download(&self, ticket: String) -> Result<JsReadableStream, JsError> {
         let ticket: BlobTicket = ticket.parse().map_err(to_js_err)?;
-        //let hash = self.0.download(ticket).await.map_err(to_js_err)?;
-        //Ok(hash.to_string())
         let connection = self
-            .0
+            .router
             .endpoint()
             .connect(ticket.addr().id, iroh_blobs::ALPN)
             .await?;
@@ -61,8 +71,7 @@ impl BlobsNode {
                 match progress.next().await {
                     Some(GetBlobItem::Item(item)) => match item {
                         BaoContentItem::Leaf(leaf) => {
-                            println!("vmx: data received: {:?}", &leaf.data);
-                            tracing::info!("vmx: data received: {:?}", &leaf.data);
+                            //tracing::info!("vmx: data received: {:?}", &leaf.data);
                             let js_value = Uint8Array::from(&leaf.data[..]).into();
                             tx.send(Ok(js_value)).await.unwrap();
 
@@ -94,35 +103,9 @@ impl BlobsNode {
         let output_stream = ReadableStream::from_stream(rx).into_raw();
         Ok(output_stream)
     }
-
-    pub async fn complete_size(&self, hash: String) -> Result<u64, JsError> {
-        let hash: Hash = hash.parse().map_err(to_js_err)?;
-        let size = self.0.complete_size(hash).await.map_err(to_js_err)?;
-        Ok(size)
-    }
-
-    pub async fn get(&self, hash: String) -> Result<Uint8Array, JsError> {
-        let hash: Hash = hash.parse().map_err(to_js_err)?;
-        let bytes = self.0.blobs.get_bytes(hash).await?;
-        Ok(bytes_to_uint8array(&bytes))
-    }
 }
 
 fn to_js_err(err: impl Into<anyhow::Error>) -> JsError {
     let err: anyhow::Error = err.into();
     JsError::new(&err.to_string())
-}
-
-pub fn uint8array_to_bytes(data: &Uint8Array) -> Bytes {
-    let mut buffer = vec![0u8; data.length() as usize];
-    data.copy_to(&mut buffer[..]);
-    Bytes::from(buffer)
-}
-
-pub fn bytes_to_uint8array(bytes: &[u8]) -> Uint8Array {
-    // Create a Uint8Array with the same length
-    let array = Uint8Array::new_with_length(bytes.len() as u32);
-    // Copy the bytes into the JS Uint8Array
-    array.copy_from(bytes);
-    array
 }
