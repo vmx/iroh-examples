@@ -11,6 +11,8 @@ use iroh_blobs::{
     BlobFormat, BlobsProtocol, Hash,
 };
 
+use crate::hasher::HasherToUse;
+
 #[derive(Debug, Clone)]
 pub struct BlobsNode {
     router: Router,
@@ -23,11 +25,11 @@ impl BlobsNode {
         let endpoint = iroh::Endpoint::bind().await?;
         endpoint.discovery().add(discovery);
 
-        let store = iroh_blobs::store::fs::FsStore::load::<crate::HasherToUse>("datastore").await?;
+        let store = iroh_blobs::store::fs::FsStore::load::<HasherToUse>("datastore").await?;
         let router = Router::builder(endpoint)
             .accept(
                 iroh_blobs::ALPN,
-                BlobsProtocol::<crate::HasherToUse>::new(&store, None),
+                BlobsProtocol::<HasherToUse>::new(&store, None),
             )
             .spawn();
         Ok(Self {

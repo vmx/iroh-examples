@@ -10,6 +10,8 @@ use tracing_subscriber_wasm::MakeConsoleWriter;
 use wasm_bindgen::{prelude::wasm_bindgen, JsError, JsValue};
 use wasm_streams::{readable::sys::ReadableStream as JsReadableStream, ReadableStream};
 
+use crate::hasher::HasherToUse;
+
 #[wasm_bindgen(start)]
 fn start() {
     console_error_panic_hook::set_once();
@@ -40,11 +42,11 @@ impl BlobsNode {
         let endpoint = iroh::Endpoint::bind().await?;
         endpoint.discovery().add(discovery.clone());
 
-        let store = iroh_blobs::store::mem::MemStore::<crate::HasherToUse>::default();
+        let store = iroh_blobs::store::mem::MemStore::<HasherToUse>::default();
         let router = Router::builder(endpoint)
             .accept(
                 iroh_blobs::ALPN,
-                BlobsProtocol::<crate::HasherToUse>::new(&store, None),
+                BlobsProtocol::<HasherToUse>::new(&store, None),
             )
             .spawn();
         Ok(Self { router })
@@ -62,7 +64,7 @@ impl BlobsNode {
             .connect(ticket.addr().id, iroh_blobs::ALPN)
             .await?;
         let mut progress =
-            iroh_blobs::get::request::get_blob::<crate::HasherToUse>(connection, ticket.hash());
+            iroh_blobs::get::request::get_blob::<HasherToUse>(connection, ticket.hash());
 
         let (mut tx, rx) = mpsc::channel::<Result<JsValue, JsValue>>(1);
 
