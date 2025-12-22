@@ -1,14 +1,14 @@
 use std::path::Path;
 
 use anyhow::Result;
-use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint};
+use iroh::{discovery::static_provider::StaticProvider, protocol::Router};
 use iroh_blobs::{
     api::{
         blobs::{AddPathOptions, ImportMode},
         Store,
     },
     ticket::BlobTicket,
-    BlobFormat, BlobsProtocol, Hash,
+    BlobFormat, BlobsProtocol,
 };
 use tempfile::TempDir;
 
@@ -43,10 +43,6 @@ impl BlobsNode {
         })
     }
 
-    pub fn endpoint(&self) -> &Endpoint {
-        self.router.endpoint()
-    }
-
     pub async fn import(&self, path: &Path) -> Result<BlobTicket> {
         println!("Auxilary data is stored at {:?}", self.dir.path());
         let tag = self
@@ -59,13 +55,10 @@ impl BlobsNode {
             .await
             .inspect_err(|err| tracing::warn!(?err, "import failed"))?;
         tracing::info!(?tag, "imported!");
-        let ticket = self.ticket(tag.hash, tag.format).await?;
-        Ok(ticket)
-    }
 
-    pub async fn ticket(&self, hash: Hash, format: BlobFormat) -> Result<BlobTicket> {
-        self.endpoint().online().await;
-        let addr = self.endpoint().addr();
-        Ok(BlobTicket::new(addr, hash, format))
+        self.router.endpoint().online().await;
+        let ticket = BlobTicket::new(self.router.endpoint().addr(), tag.hash, tag.format);
+
+        Ok(ticket)
     }
 }

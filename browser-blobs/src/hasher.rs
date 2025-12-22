@@ -1,4 +1,4 @@
-use bao_tree::Hasher;
+use bao_tree::{Hash, Hasher};
 use sha2::{Digest, Sha256};
 
 //type HasherToUse = bao_tree::Blake3Hasher;
@@ -35,7 +35,7 @@ fn calculate_merkle_root(data: &[u8]) -> Vec<u8> {
 pub struct CommpHasher;
 
 impl Hasher for CommpHasher {
-    fn hash_chunk(_start_chunk: u64, data: &[u8], _is_root: bool) -> bao_tree::Hash {
+    fn hash_chunk(_start_chunk: u64, data: &[u8], _is_root: bool) -> Hash {
         //println!("vmx: hash_chunk: data len: {}", data.len());
         // TODO vmx 2025-09-21: no clue when 20 and 64 bytes are hashed, so this is a hack for now
         // to at least keep things running.
@@ -47,10 +47,10 @@ impl Hasher for CommpHasher {
         <[u8; 32]>::try_from(&root[..32]).unwrap().into()
     }
     fn hash_inner(
-        left_child: &bao_tree::Hash,
-        right_child: &bao_tree::Hash,
+        left_child: &Hash,
+        right_child: &Hash,
         _is_root: bool,
-    ) -> bao_tree::Hash {
+    ) -> Hash {
         let data: Vec<_> = [&left_child.as_bytes()[..], &right_child.as_bytes()[..]].concat();
         let mut hashed = Sha256::digest(&data);
         //println!("vmx: inner data: {:X?}", data);

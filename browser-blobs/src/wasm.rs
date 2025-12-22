@@ -76,8 +76,6 @@ impl BlobsNode {
                             //tracing::info!("vmx: data received: {:?}", &leaf.data);
                             let js_value = Uint8Array::from(&leaf.data[..]).into();
                             tx.send(Ok(js_value)).await.unwrap();
-
-                            //tokio::io::stdout().write_all(&leaf.data).await?;
                         }
                         BaoContentItem::Parent(parent) => {
                             tracing::info!("Parent: {parent:?}");
