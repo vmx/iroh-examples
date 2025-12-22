@@ -46,11 +46,7 @@ impl Hasher for CommpHasher {
         //println!("vmx: hash_chunk: root: {:X?}", root);
         <[u8; 32]>::try_from(&root[..32]).unwrap().into()
     }
-    fn hash_inner(
-        left_child: &Hash,
-        right_child: &Hash,
-        _is_root: bool,
-    ) -> Hash {
+    fn hash_inner(left_child: &Hash, right_child: &Hash, _is_root: bool) -> Hash {
         let data: Vec<_> = [&left_child.as_bytes()[..], &right_child.as_bytes()[..]].concat();
         let mut hashed = Sha256::digest(&data);
         //println!("vmx: inner data: {:X?}", data);
