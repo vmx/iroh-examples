@@ -1,6 +1,6 @@
-#[cfg(feature = "cli")]
+#[cfg(not(target_family = "wasm"))]
 mod node;
-#[cfg(feature = "cli")]
+#[cfg(not(target_family = "wasm"))]
 pub use node::BlobsNode;
 
 // #[cfg(all(target_family = "wasm", target_os = "unknown"))]

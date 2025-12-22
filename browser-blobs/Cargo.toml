@@ -9,13 +9,11 @@ crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "cli"
-required-features = ["cli"]
 
 [dependencies]
 anyhow = "1.0.86"
 bao-tree = { version = "0.16.0", default-features = false }
 bytes = "1.10.1"
-clap = { version = "4.5.30", features = ["derive"], optional = true }
 console_error_panic_hook = "0.1.7"
 futures = "0.3.31"
 iroh = { version = "0.95", default-features = false }
@@ -31,8 +29,10 @@ wasm-bindgen = "=0.2.106"
 wasm-bindgen-futures = "0.4"
 wasm-streams = "0.4.2"
 
-[features]
-cli = ["tokio/full", "dep:clap", "iroh-blobs/fs-store"]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+clap = { version = "4.5.30", features = ["derive"] }
+tokio = { version = "1.44.0", default-features = false, features = ["full"] }
+iroh-blobs = { version = "0.97", default-features = false, features = ["fs-store"] }
 
 [patch.crates-io]
 bao-tree = { path = "/home/vmx/src/rust/iroh/bao-tree" }
