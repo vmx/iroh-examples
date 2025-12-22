@@ -10,13 +10,15 @@ use iroh_blobs::{
     ticket::BlobTicket,
     BlobFormat, BlobsProtocol, Hash,
 };
+use tempfile::TempDir;
 
 use crate::hasher::HasherToUse;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BlobsNode {
     router: Router,
     pub blobs: Store,
+    dir: TempDir,
 }
 
 impl BlobsNode {
@@ -25,7 +27,9 @@ impl BlobsNode {
         let endpoint = iroh::Endpoint::bind().await?;
         endpoint.discovery().add(discovery);
 
-        let store = iroh_blobs::store::fs::FsStore::load::<HasherToUse>("datastore").await?;
+        // Create a temporary dir, so that it's cleaned up after the tool is run.
+        let tmp_dir = TempDir::new()?;
+        let store = iroh_blobs::store::fs::FsStore::load::<HasherToUse>(tmp_dir.path()).await?;
         let router = Router::builder(endpoint)
             .accept(
                 iroh_blobs::ALPN,
@@ -35,6 +39,7 @@ impl BlobsNode {
         Ok(Self {
             blobs: store.as_ref().clone(),
             router,
+            dir: tmp_dir,
         })
     }
 
@@ -43,6 +48,7 @@ impl BlobsNode {
     }
 
     pub async fn import(&self, path: &Path) -> Result<BlobTicket> {
+        println!("Auxilary data is stored at {:?}", self.dir.path());
         let tag = self
             .blobs
             .add_path_with_opts(AddPathOptions {
