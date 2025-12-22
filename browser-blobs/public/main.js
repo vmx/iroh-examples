@@ -13,22 +13,6 @@ log(`our node id: ${blobs.endpoint_id()}`);
 document.querySelector(".forms").style.display = "flex";
 console.log(document.querySelector(".forms").style);
 
-//// when submitting the import form: import a blob and show a ticket
-//document.querySelector("form#import").onsubmit = (e) => {
-//  e.preventDefault();
-//  const string = new FormData(e.target).get("data");
-//  if (!string) return;
-//  const bytes = new TextEncoder().encode(string);
-//  importBlob(bytes);
-//};
-//
-//// copy button copies ticket
-//document.querySelector("form#import #copy").onclick = () => {
-//  const ticket = document.querySelector("form#import #print-ticket").value;
-//  if (!ticket) return;
-//  navigator.clipboard.writeText(ticket);
-//};
-
 // when submitting the download form: download a blob from a ticket
 document.querySelector("form#download").onsubmit = (e) => {
   e.preventDefault();
@@ -37,37 +21,21 @@ document.querySelector("form#download").onsubmit = (e) => {
   downloadBlob(ticket);
 };
 
-
 async function saveStream(stream, suggestedFilename) {
   try {
-    // 1. Show the file picker to get user-selected file path
     const fileHandle = await showSaveFilePicker({
       suggestedName: suggestedFilename,
-      //types: [
-      //  { description: "Any file", accept: "*/*" }, // Adjust MIME types as needed
-      //],
     });
 
-    // 2. If user canceled, exit early
     if (!fileHandle) return;
 
     const writer = await fileHandle.createWritable();
-    //const writer = fileHandle.writer;
-    //const reader = stream.getReader(); // 3. Get a reader for the ReadableStream
-
-    // 4. Pipe the stream directly to the file writer (no buffering)
     await stream.pipeTo(writer);
-
-    // 5. Close the writer to finalize the file
-    //await writer.close();
-
     console.log("File saved successfully!");
-
   } catch (error) {
     console.error("Error saving file:", error);
   }
 }
-
 
 async function downloadBlob(ticket) {
   try {
@@ -76,34 +44,10 @@ async function downloadBlob(ticket) {
     const stream = await blobs.download(ticket);
     saveStream(stream, 'data.bin')
     log("download finished");
-    //log(`hash: ${hash}`);
-    //const size = await blobs.complete_size(hash);
-    //log(`blob size: ${size}`);
-    //if (size < 1024 * 1024) {
-    //  try {
-    //    const data = await blobs.get(hash);
-    //    const text = new TextDecoder().decode(data);
-    //    log(`content: ${text}`);
-    //    document.querySelector("form#download #print-text").value = text;
-    //  } catch (_err) {
-    //    log(`(invalid utf-8)`);
-    //  }
-    //}
   } catch (err) {
     log(`download failed: ${err}`);
   }
 }
-
-//async function importBlob(blobData) {
-//  try {
-//    log("importing ...");
-//    const result = await blobs.import(blobData);
-//    log(`ticket: ${result}`);
-//    document.querySelector("form#import #print-ticket").value = result;
-//  } catch (err) {
-//    log(`import failed: ${err}`);
-//  }
-//}
 
 function log(line, className) {
   const time = new Date().toISOString().substring(11, 22);

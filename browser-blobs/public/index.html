@@ -18,40 +18,16 @@
                     >iroh-blobs</a
                 >
                 in the browser, compiled to WebAssembly. The example implements
-                a very basic demo for iroh-blobs: You can create a blob with
-                text in it. We'll print a ticket with which others can fetch the
-                text. There's also a terminal app that interoperates with this
-                browser app.
+                a very basic demo for iroh-blobs: You can retrieve a file that
+                is served from the terminal app. It's not buffered in memory,
+                so you can retrieve arbitrarily sized files.
             </p>
             <p>
-                <strong>Usage:</strong> Open this page in a new tab, or on
-                another device, and copy over the ticket after importing a blog.
-                You can also fetch a blob from the command line: Clone the
-                <a
-                    href="https://github.com/n0-computer/iroh-examples/"
-                    target="_blank"
-                    >iroh-examples</a
-                >
-                repo, navigate to <code>browser-blobs</code>, and run the CLI
-                with <code>cargo run --features cli</code>.
+                <strong>Usage:</strong> Paste the ticket that was printed by the
+                CLI tool that was run with <code>cargo run /path/to/file</code>.
             </p>
         </header>
         <div class="forms">
-            <form id="import">
-                <h3>provide a blob</h3>
-                <div class="fields">
-                    <div>
-                        <label for="data">text to share as blob</label>
-                        <input name="data" placeholder="type something…" />
-                    </div>
-                </div>
-                <button type="submit">import & share</button>
-                <div class="fields">
-                    <label for="print-ticket">ticket</label>
-                    <input disabled id="print-ticket" />
-                    <button id="copy">copy</button>
-                </div>
-            </form>
             <form id="download">
                 <h3>fetch a blob</h3>
                 <div class="fields">
@@ -60,11 +36,6 @@
                         <input name="ticket" placeholder="blob…" />
                     </div>
                     <button type="submit">download</button>
-                </div>
-                <div></div>
-                <div class="fields">
-                    <label for="print-text">fetched text</label>
-                    <input disabled id="print-text" />
                 </div>
             </form>
         </div>
