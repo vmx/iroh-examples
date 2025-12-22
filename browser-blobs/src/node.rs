@@ -1,11 +1,10 @@
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
-use bytes::Bytes;
-use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint, EndpointId};
+use anyhow::Result;
+use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint};
 use iroh_blobs::{
     api::{
-        blobs::{AddPathOptions, BlobStatus, ImportMode},
+        blobs::{AddPathOptions, ImportMode},
         Store,
     },
     ticket::BlobTicket,

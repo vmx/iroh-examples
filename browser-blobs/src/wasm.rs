@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use bao_tree::io::BaoContentItem;
 use futures::channel::mpsc;
-use iroh::{discovery::static_provider::StaticProvider, protocol::Router, Endpoint, EndpointId};
-use iroh_blobs::{get::request::GetBlobItem, ticket::BlobTicket, BlobsProtocol, Hash};
+use iroh::{discovery::static_provider::StaticProvider, protocol::Router};
+use iroh_blobs::{get::request::GetBlobItem, ticket::BlobTicket, BlobsProtocol};
 use js_sys::Uint8Array;
 use n0_future::{SinkExt, StreamExt};
 use tracing::level_filters::LevelFilter;
