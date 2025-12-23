@@ -22,19 +22,14 @@ document.querySelector("form#download").onsubmit = (e) => {
 };
 
 async function saveStream(stream, suggestedFilename) {
-  try {
-    const fileHandle = await showSaveFilePicker({
-      suggestedName: suggestedFilename,
-    });
+  const fileHandle = await showSaveFilePicker({
+    suggestedName: suggestedFilename,
+  });
 
-    if (!fileHandle) return;
+  if (!fileHandle) return;
 
-    const writer = await fileHandle.createWritable();
-    await stream.pipeTo(writer);
-    console.log("File saved successfully!");
-  } catch (error) {
-    console.error("Error saving file:", error);
-  }
+  const writer = await fileHandle.createWritable();
+  await stream.pipeTo(writer);
 }
 
 async function downloadBlob(ticket) {
@@ -42,7 +37,7 @@ async function downloadBlob(ticket) {
     log("downloading...");
     //const hash = await blobs.download(ticket);
     const stream = await blobs.download(ticket);
-    saveStream(stream, 'data.bin')
+    await saveStream(stream, 'data.bin')
     log("download finished");
   } catch (err) {
     log(`download failed: ${err}`);

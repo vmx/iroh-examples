@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use bao_tree::io::BaoContentItem;
 use futures::channel::mpsc;
 use iroh::{discovery::static_provider::StaticProvider, protocol::Router};
@@ -73,7 +73,6 @@ impl BlobsNode {
                 match progress.next().await {
                     Some(GetBlobItem::Item(item)) => match item {
                         BaoContentItem::Leaf(leaf) => {
-                            //tracing::info!("vmx: data received: {:?}", &leaf.data);
                             let js_value = Uint8Array::from(&leaf.data[..]).into();
                             tx.send(Ok(js_value)).await.unwrap();
                         }
@@ -81,20 +80,18 @@ impl BlobsNode {
                             tracing::info!("Parent: {parent:?}");
                         }
                     },
-                    Some(GetBlobItem::Done(stats)) => {
-                        //break stats;
-                        println!("vmx: stats: {:?}", stats);
+                    Some(GetBlobItem::Done(_stats)) => {
                         break;
                     }
                     Some(GetBlobItem::Error(err)) => {
-                        return Err(anyhow!("Error while streaming blob: {err}"))
-                            .map_err(to_js_err)
-                            .expect("vmx: error while streaming blob");
+                        tx.send(Err(format!("Error while streaming: {err}").into()))
+                            .await
+                            .unwrap();
                     }
                     None => {
-                        return Err(anyhow!("Stream ended unexpectedly."))
-                            .map_err(to_js_err)
-                            .expect("vmx: error stream ended");
+                        tx.send(Err("Stream ended unexpectedly.".into()))
+                            .await
+                            .unwrap();
                     }
                 }
             }
