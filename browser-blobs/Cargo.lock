@@ -193,6 +193,7 @@ dependencies = [
 [[package]]
 name = "bao-tree"
 version = "0.16.0"
+source = "git+https://github.com/vmx/bao-tree?branch=generic-hasher-rebased#a50a901a546917d63b89f26dc88b3b3215cebb48"
 dependencies = [
  "arrayvec",
  "blake3",
@@ -1792,6 +1793,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.97.0"
+source = "git+https://github.com/vmx/iroh-blobs?branch=generic-hasher-rebased#e7839f4a48fa9dab9766fb183efcb1f405c26b11"
 dependencies = [
  "arrayvec",
  "bao-tree",
