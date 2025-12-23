@@ -25,6 +25,32 @@ Serve up a file:
 cargo run /path/to/file
 ```
 
+To check whether the files are actually verified try:
+
+```sh
+fallocate --length 1M /tmp/1.mib
+cargo run /tmp/1.mib
+```
+
+Download the file from the browser.
+
+Now run in a different terminal:
+
+```sh
+printf '\xFF' | dd of=/tmp/1.mib bs=1 seek=$((0x5)) conv=notrunc status=none
+```
+
+Click "download" again in the browser again. It should show an error and the download should be an empty file.
+
+Fix the file again:
+
+```sh
+printf '\x00' | dd of=/tmp/1.mib bs=1 seek=$((0x5)) conv=notrunc status=none
+```
+
+Now clicking on download should be successful again.
+
+
 ## Navigate the code
 
 This folder contains a single Rust crate that can be compiled to both WebAssembly for the browser and to a command line.
